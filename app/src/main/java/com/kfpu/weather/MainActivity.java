@@ -15,13 +15,14 @@ import android.widget.Toast;
 import com.kfpu.weather.loader.WeatherLoader;
 import com.kfpu.weather.pojo.City;
 import com.kfpu.weather.pojo.Weather;
+import com.kfpu.weather.presenters.Presenter;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.Unbinder;
 
-public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Weather>{
+public class MainActivity extends AppCompatActivity implements UpdateWeather {
 
     @BindView(R.id.btn_update)
     Button btnUpdate;
@@ -30,61 +31,51 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private Unbinder unbinder;
     @BindView(R.id.progress_bar)
     ProgressBar progressBar;
+
+    Presenter presenter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        presenter = new Presenter(this);
         unbinder = ButterKnife.bind(this);
-        getLoaderManager().initLoader(Const.WEATHER_LOADER_ID, new Bundle(), MainActivity.this);
-
+        presenter.buttonClicked();
 
     }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if(unbinder!=null){
+        if (unbinder != null) {
             unbinder.unbind();
         }
     }
+
     @OnClick(R.id.btn_update)
-    public void onUpdateClick(){
-        getLoaderManager().initLoader(Const.WEATHER_LOADER_ID, new Bundle(), MainActivity.this);
+    public void onUpdateClick() {
+        presenter.buttonClicked();
     }
 
     @Override
-    public Loader<Weather> onCreateLoader(int id, Bundle args) {
-        btnUpdate.setVisibility(View.GONE);
-        progressBar.setVisibility(View.VISIBLE);
-        return new WeatherLoader(this);
-    }
-
-    @Override
-    public void onLoadFinished(Loader<Weather> loader, Weather data) {
-        if(data!= null) {
-            switch (loader.getId()) {
-                case Const.WEATHER_LOADER_ID:
-                    onNetworkLoadingSuccess(data);
-                    break;
-            }
-        }
-        else{
-            onNetworkLoadingFailure();
-        }
-    }
-
-
-    @Override
-    public void onLoaderReset(Loader<Weather> loader) {
-
-    }
-    private void onNetworkLoadingSuccess(@Nullable Weather result) {
-        tvDegrees.setText(String.valueOf((int) (result.getMain().getTemp()-273))+"°C");
+    public void onNetworkLoadingSuccess(@Nullable Weather result) {
+        tvDegrees.setText(String.valueOf((int) (result.getMain().getTemp() - 273)) + "°C");
         getLoaderManager().destroyLoader(Const.WEATHER_LOADER_ID);
         btnUpdate.setVisibility(View.VISIBLE);
         progressBar.setVisibility(View.GONE);
     }
-    private void onNetworkLoadingFailure(){
+
+
+    @Override
+    public void updateWeather() {
+        btnUpdate.setVisibility(View.GONE);
+        progressBar.setVisibility(View.VISIBLE);
+        getLoaderManager().initLoader(Const.WEATHER_LOADER_ID, new Bundle(), presenter);
+    }
+
+    @Override
+    public void onNetworkLoadingFailure() {
         getLoaderManager().destroyLoader(Const.WEATHER_LOADER_ID);
         btnUpdate.setVisibility(View.VISIBLE);
         progressBar.setVisibility(View.GONE);
